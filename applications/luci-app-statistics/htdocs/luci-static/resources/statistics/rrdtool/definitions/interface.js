@@ -15,7 +15,9 @@ return baseclass.extend({
 			/* draw this diagram for each plugin instance */
 			per_instance: true,
 			title: "%H: Transfer on %pi",
-			vlabel: "Bytes/s",
+			vlabel: "Bits/s",
+			number_format: "%5.1lf%sb/s",
+			totals_format: "%5.1lf%sb",
 
 			/* diagram data description */
 			data: {
@@ -27,16 +29,18 @@ return baseclass.extend({
 				/* special options for single data lines */
 				options: {
 					if_octets__tx: {
+						transform_rpn: "8,*",
 						total: true,		/* report total amount of bytes */
 						color: "00ff00",	/* tx is green */
-						title: "Bytes (TX)"
+						title: "Bits (TX)"
 					},
 
 					if_octets__rx: {
+						transform_rpn: "8,*",
 						flip : true,		/* flip rx line */
 						total: true,		/* report total amount of bytes */
 						color: "0000ff",	/* rx is blue */
-						title: "Bytes (RX)"
+						title: "Bits (RX)"
 					}
 				}
 			}
@@ -51,6 +55,8 @@ return baseclass.extend({
 			per_instance: true,
 			title: "%H: Packets on %pi",
 			vlabel: "Packets/s",
+			number_format: "%5.1lf%sP/s",
+			totals_format: "%5.1lf%s",
 
 			/* diagram data description */
 			data: {
