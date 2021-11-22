@@ -59,6 +59,18 @@
 		}
 	},
 
+	"admin/status/mcast": {
+		"title": "Multicast",
+		"order": 3,
+		"action": {
+			"type": "view",
+			"path": "status/mcast"
+		},
+		"depends": {
+			"acl": [ "luci-mod-status-mcast" ]
+		}
+	},
+
 	"admin/status/logs": {
 		"title": "System Log",
 		"order": 4,
