@@ -57,6 +57,22 @@
 		}
 	},
 
+	"luci-mod-status-mcast": {
+		"description": "Grant access to the system multicast status",
+		"read": {
+			"file": {
+				"/proc/net/ip_mr_vif": [ "read" ],
+				"/proc/net/ip_mr_cache": [ "read" ],
+				"/proc/net/igmp": [ "read" ],
+				"/proc/sys/net/ipv4/igmp_max_memberships": [ "read" ],
+				"/proc/sys/net/ipv4/conf/all/mc_forwarding": [ "read" ],
+				"/proc/net/dev_mcast": [ "read" ],
+				"/proc/net/mcfilter": [ "read" ],
+				"/proc/sys/net/ipv4/igmp_max_msf" : [ "read" ]
+			}
+		}
+	},
+
 	"luci-mod-status-channel_analysis": {
 		"description": "Grant access to wireless channel status",
 		"read": {
