@@ -339,6 +339,11 @@ return baseclass.extend({
 			'-h', height || this.opts.height
 		];
 
+		if(timespan && timespan=='1min') {
+			cmdline.push('-x');
+			cmdline.push('SECOND:5:SECOND:10:SECOND:10:0:%T');
+		}
+
 		for (var i = 0; i < def.length; i++) {
 			var opt = String(def[i]);
 
