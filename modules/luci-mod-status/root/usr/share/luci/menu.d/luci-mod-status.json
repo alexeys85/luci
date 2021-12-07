@@ -71,6 +71,18 @@
 		}
 	},
 
+	"admin/status/gpio": {
+		"title": "GPIO",
+		"order": 3,
+		"action": {
+			"type": "view",
+			"path": "status/gpio"
+		},
+		"depends": {
+			"acl": [ "luci-mod-status-gpio" ]
+		}
+	},
+
 	"admin/status/logs": {
 		"title": "System Log",
 		"order": 4,
