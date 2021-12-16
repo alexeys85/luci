@@ -4,6 +4,8 @@
 'require poll';
 'require ui';
 
+var pollIval = 2;
+
 var mrdb = {
     '224.0.0.0': 'Base Address',
     '224.0.0.1': 'All Systems on this Subnet',
@@ -44,6 +46,10 @@ function formatNumber(num, base, decimals) {
 
 function formatBytes(bytes, decimals = 2) {
     return formatNumber(bytes, 1024, decimals);
+};
+
+function formatBits(bits, decimals = 2) {
+    return formatNumber(bits, 1000, decimals);
 };
 
 function formatPackets(pakets, decimals = 2) {
@@ -90,9 +96,39 @@ function createValueCell(value, prettify) {
                     }, (prettify ? '%.2m' : '%d').format(value));
 };
 
+function map_uncheck_all(m) {
+    for (var value of m.values()) {
+        value.checked = false;
+    }
+};
+
+function map_get_rate(m, key, bytes) {
+    // в байтах/с
+    var rate = m.has(key) ? (bytes - m.get(key).bytes) / pollIval : 0;
+    // запоминаем значение принятых байт и помечаем интерфейс проверенным
+    m.set(key, { bytes: bytes, checked: true} );
+
+    return Math.max(rate, 0);
+};
+
+function map_cleanup(m) {
+    for (const [key, value] of m) {
+        if(!value.checked)
+            m.delete(key);
+    }
+};
+
+// Map { ifname, {bytesin, checked} }
+const if_bytes_in_map = new Map();
+const if_bytes_out_map = new Map();
+
 function parseMrVif(s, prettify) {
     var lines = s.trim().split(/\n/),
         res = [];
+
+    // Помечаем интерфейсы как не проверенные
+    map_uncheck_all(if_bytes_in_map);
+    map_uncheck_all(if_bytes_out_map);
 
     // Interface      BytesIn  PktsIn  BytesOut PktsOut Flags Local    Remote
     for (var i = 1; i < lines.length; i++) {
@@ -116,22 +152,39 @@ function parseMrVif(s, prettify) {
             }, [ '0x' + parseInt(flags, 16).toString(16) ]);
         }
 
+        // в байтах/с
+        var rate_in  = map_get_rate(if_bytes_in_map,  iface, bytesin);
+        var rate_out = map_get_rate(if_bytes_out_map, iface, bytesout); 
+
         res.push([
             idx,
             '<span class="ifacebadge nowrap">%s</span>'.format(iface),
+            createValueCell(rate_in, prettify),
             createValueCell(bytesin, prettify),
             createValueCell(pktsin, prettify),
+            createValueCell(rate_out, prettify),
             createValueCell(bytesout, prettify),
             createValueCell(pktsout, prettify),
             flags, local, remote
         ]);
     }
+
+    // удаляем все непроверенные интерфейсы
+    map_cleanup(if_bytes_in_map);
+    map_cleanup(if_bytes_out_map);
+
     return res;
 };
+
+// Map { group_origin, {bytesin, checked} }
+const group_bytes_map = new Map();
 
 function parseMrCache(s, vif, prettify) {
     var lines = s.trim().split(/\n/),
         res = [];
+
+    // Помечаем интерфейсы как не проверенные
+    map_uncheck_all(group_bytes_map);
 
     // Group    Origin   Iif     Pkts    Bytes    Wrong Oifs
     for (var i = 1; i < lines.length; i++) {
@@ -150,6 +203,11 @@ function parseMrCache(s, vif, prettify) {
                 oifs.push(ifIdxToIface(+iface_ttl[0], vif) + ':' + iface_ttl[1]);
             }
         }
+
+        var gr_org = "%s_%s".format(group, origin);
+
+        // в байтах/с
+        var rate = map_get_rate(group_bytes_map, gr_org, bytes);
         
         res.push([
             E('div', {
@@ -157,11 +215,16 @@ function parseMrCache(s, vif, prettify) {
                         'has-oifs': oifs.length != 0
                     }, (group)),
             origin, iif, 
+            createValueCell(rate, prettify),
             createValueCell(pkts, prettify),
             createValueCell(bytes, prettify),
             wrong, oifs.join('<br>')
         ]);
     }
+
+    // удаляем все непроверенные группы
+    map_cleanup(group_bytes_map);
+
     return res;
 };
 
@@ -349,11 +412,11 @@ return view.extend({
         ]);
 
         var mrviftbl = this.createTable('mrviftbl', [
-            'VIF index', 'Interface', 'Bytes in', 'Packets in', 'Bytes out', 'Packets out', 'Flags', 'Local', 'Remote'
+            'VIF index', 'Interface', 'Rate in', 'Bytes in', 'Packets in', 'Rate out', 'Bytes out', 'Packets out', 'Flags', 'Local', 'Remote'
         ]);
 
         var mrcachetbl = this.createTable('mrcachetbl', [ 
-            'Group', 'Origin', 'Iif', 'Packets', 'Bytes', 'Wrong if', 'Oifs:TTL' 
+            'Group', 'Origin', 'Iif', 'Rate', 'Packets', 'Bytes', 'Wrong if', 'Oifs:TTL' 
         ]);
 
         var mrigmptbl = this.createTable('mrigmptbl', [
@@ -364,7 +427,7 @@ return view.extend({
             'Idx', 'Interface', 'Users', 'Refs', 'Address'
         ]);
 
-        poll.add(pollMr.bind(this), 2);
+        poll.add(pollMr.bind(this), pollIval);
 
         var view = E([], [
             E('h2', {}, [ _('Multicast') ]),
