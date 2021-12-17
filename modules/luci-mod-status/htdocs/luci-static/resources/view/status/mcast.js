@@ -22,7 +22,7 @@ var mrdb = {
     '239.255.255.250' : 'SSDP'
 };
 
-function hexStrToIP(string) {
+function hexStrToIP(string, dir = true) {
     var ip = parseInt(string, 16);
 
     var part1 = ip & 255;
@@ -30,7 +30,10 @@ function hexStrToIP(string) {
     var part3 = ((ip >> 16) & 255);
     var part4 = ((ip >> 24) & 255);
 
-    return [ part1, part2, part3, part4 ].join('.');
+    if(dir)
+        return [ part1, part2, part3, part4 ].join('.');
+    else
+        return [ part4, part3, part2, part1 ].join('.');
 };
 
 function formatNumber(num, base, decimals) {
@@ -264,11 +267,11 @@ function parseMcFilter(s) {
 
     // Idx Device        MCA        SRC    INC    EXC
     for (var i = 1; i < lines.length; i++) {
-        var m = lines[i].split(/\s+/),
+        var m = lines[i].trim().split(/\s+/),
             idx = +m[0],
             dev = m[1],
-            group = hexStrToIP(m[2]),
-            source = hexStrToIP(m[3]),
+            group = hexStrToIP(m[2], false),
+            source = hexStrToIP(m[3], false),
             inc = +m[4],
             exc = +m[5];
 
