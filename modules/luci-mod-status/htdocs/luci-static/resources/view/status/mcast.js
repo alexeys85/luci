@@ -256,7 +256,34 @@ function getGroupRates(prettify) {
     }
 
     return res;
-}
+};
+
+function parseMcFilter(s) {
+    var lines = s.trim().split(/\n/),
+        res = [];
+
+    // Idx Device        MCA        SRC    INC    EXC
+    for (var i = 1; i < lines.length; i++) {
+        var m = lines[i].split(/\s+/),
+            idx = +m[0],
+            dev = m[1],
+            group = hexStrToIP(m[2]),
+            source = hexStrToIP(m[3]),
+            inc = +m[4],
+            exc = +m[5];
+
+        res.push([
+            idx, 
+            '<span class="ifacebadge nowrap">%s</span>'.format(dev),
+            E('div', {
+                        'data-tooltip': mrdb[group] ? mrdb[group] : null
+                    }, (group)),
+            source, inc, exc
+        ]);
+    }
+
+    return res;
+};
 
 function parseIgmp(s, mships) {
     var lines = s.trim().split(/\n/),
@@ -286,7 +313,9 @@ function parseIgmp(s, mships) {
         }
 
         res.push([
-            idx, dev, cnt, qur, groups.join('<br>'), users.join('<br>'), timer.join('<br>'), repor.join('<br>')
+            idx, 
+            '<span class="ifacebadge nowrap">%s</span>'.format(dev), 
+            cnt, qur, groups.join('<br>'), users.join('<br>'), timer.join('<br>'), repor.join('<br>')
         ]);
     }
 
@@ -306,7 +335,9 @@ function parseDevMcast(s) {
             mac   = prettyMac(m[4]);
 
         res.push([
-            idx, iface, users, ref, mac
+            idx, 
+            '<span class="ifacebadge nowrap">%s</span>'.format(iface), 
+            users, ref, mac
         ]);
     }
 
@@ -329,7 +360,8 @@ function pollMr() {
             fs.trimmed('/proc/net/ip_mr_vif'),
             fs.trimmed('/proc/net/ip_mr_cache'),
             fs.trimmed('/proc/net/igmp'),
-            fs.trimmed('/proc/net/dev_mcast')
+            fs.trimmed('/proc/net/dev_mcast'),
+            fs.trimmed('/proc/net/mcfilter')
         ]).then(function(data) {
             var enabled = +data[0],
                 igmp_max = +data[1],
@@ -337,6 +369,7 @@ function pollMr() {
                 mrcache = data[3],
                 mrigmp = data[4],
                 mrdevmcast = data[5],
+                mrmcfilter = data[6],
                 res =[];
 
             var btn_pretty = document.getElementById('pretty_btn'),
@@ -356,6 +389,11 @@ function pollMr() {
             // после parseMrCache
             var rates = getGroupRates(prettify);
             cbi_update_table('#mrratestbl', rates,
+                E('em', _('No entries available'))
+            );
+
+            var filter = parseMcFilter(mrmcfilter);
+            cbi_update_table('#mrmctbl', filter,
                 E('em', _('No entries available'))
             );
 
@@ -459,6 +497,10 @@ return view.extend({
             'Group', 'Rate' 
         ]);
 
+        var mrmctbl = this.createTable('mrmctbl', [ 
+            'Idx', 'Device', 'Group', 'Source', 'INC', 'EXC' 
+        ]);
+
         var mrigmptbl = this.createTable('mrigmptbl', [
             'Idx', 'Device', 'Count', 'Querier', 'Group', 'Users', 'Timer', 'Reporter'
         ]);
@@ -502,8 +544,12 @@ return view.extend({
                     E('h3', {}, [ _('Group rates') ]),
                     mrratestbl,
 
+                    E('h3', {}, [ _('IGMPv3 current kernel state') ]),
+                    E('p', {}, [ _('Active IGMP SSM (S,G) joins') ]),
+                    mrmctbl,
+
                     E('h3', {}, [ _('IGMP multicast information') ]),
-                    E('p', {}, [ _('Lists the IP multicast addresses which this system joined') ]),
+                    E('p', {}, [ _('Lists the IP multicast addresses which this system joined, active IGMP ASM (*,G) joins') ]),
                     mrigmptbl,
 
                     E('h3', {}, [ _('Layer2 multicast groups which a device is listening to') ]),
