@@ -18,6 +18,7 @@ var mrdb = {
     '224.0.1.132' : 'PTP-alternate3',
     '224.2.127.254' : 'SAPv1 Announcements',
     '224.2.127.255' : 'SAPv0 Announcements',
+    '239.192.152.143' : 'BT Local Peer Discovery',
     '239.255.255.250' : 'SSDP'
 };
 
@@ -179,12 +180,19 @@ function parseMrVif(s, prettify) {
 // Map { group_origin, {bytesin, checked} }
 const group_bytes_map = new Map();
 
+// Map { group, {rate, checked} }
+const group_rates_map = new Map();
+
 function parseMrCache(s, vif, prettify) {
     var lines = s.trim().split(/\n/),
         res = [];
 
     // Помечаем интерфейсы как не проверенные
     map_uncheck_all(group_bytes_map);
+    map_uncheck_all(group_rates_map);
+    for (var value of group_rates_map.values()) {
+        value.rate = 0;
+    }
 
     // Group    Origin   Iif     Pkts    Bytes    Wrong Oifs
     for (var i = 1; i < lines.length; i++) {
@@ -208,7 +216,13 @@ function parseMrCache(s, vif, prettify) {
 
         // в байтах/с
         var rate = map_get_rate(group_bytes_map, gr_org, bytes);
-        
+
+        if(group_rates_map.has(group)) {
+            group_rates_map.get(group).rate += rate;
+            group_rates_map.get(group).checked = true;
+        } else
+            group_rates_map.set(group, {rate : rate, checked : true});
+
         res.push([
             E('div', {
                         'data-tooltip': mrdb[group] ? mrdb[group] : null,
@@ -224,9 +238,25 @@ function parseMrCache(s, vif, prettify) {
 
     // удаляем все непроверенные группы
     map_cleanup(group_bytes_map);
+    map_cleanup(group_rates_map);
 
     return res;
 };
+
+function getGroupRates(prettify) {
+    var res = [];
+
+    for (const [key, value] of group_rates_map) {
+        res.push([
+            E('div', {
+                'data-tooltip': mrdb[key] ? mrdb[key] : null
+            }, (key)),
+            createValueCell(value.rate, prettify)
+        ]);
+    }
+
+    return res;
+}
 
 function parseIgmp(s, mships) {
     var lines = s.trim().split(/\n/),
@@ -320,6 +350,12 @@ function pollMr() {
 
             var cache = parseMrCache(mrcache, vif, prettify);
             cbi_update_table('#mrcachetbl', cache,
+                E('em', _('No entries available'))
+            );
+
+            // после parseMrCache
+            var rates = getGroupRates(prettify);
+            cbi_update_table('#mrratestbl', rates,
                 E('em', _('No entries available'))
             );
 
@@ -419,6 +455,10 @@ return view.extend({
             'Group', 'Origin', 'Iif', 'Rate', 'Packets', 'Bytes', 'Wrong if', 'Oifs:TTL' 
         ]);
 
+        var mrratestbl = this.createTable('mrratestbl', [ 
+            'Group', 'Rate' 
+        ]);
+
         var mrigmptbl = this.createTable('mrigmptbl', [
             'Idx', 'Device', 'Count', 'Querier', 'Group', 'Users', 'Timer', 'Reporter'
         ]);
@@ -458,6 +498,9 @@ return view.extend({
                         }, [ _('Hide routes without outbound interfaces') ])
                     ]),
                     mrcachetbl,
+
+                    E('h3', {}, [ _('Group rates') ]),
+                    mrratestbl,
 
                     E('h3', {}, [ _('IGMP multicast information') ]),
                     E('p', {}, [ _('Lists the IP multicast addresses which this system joined') ]),
