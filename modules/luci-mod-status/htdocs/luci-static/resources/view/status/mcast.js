@@ -361,15 +361,17 @@ function pollMr() {
             fs.trimmed('/proc/net/ip_mr_cache'),
             fs.trimmed('/proc/net/igmp'),
             fs.trimmed('/proc/net/dev_mcast'),
-            fs.trimmed('/proc/net/mcfilter')
+            fs.trimmed('/proc/net/mcfilter'),
+            fs.trimmed('/proc/sys/net/ipv4/igmp_max_msf')
         ]).then(function(data) {
             var enabled = +data[0],
-                igmp_max = +data[1],
+                asm_max = +data[1],
                 mrvif = data[2],
                 mrcache = data[3],
                 mrigmp = data[4],
                 mrdevmcast = data[5],
                 mrmcfilter = data[6],
+                ssm_max = +data[7],
                 res =[];
 
             var btn_pretty = document.getElementById('pretty_btn'),
@@ -418,7 +420,9 @@ function pollMr() {
                 ], [
                 'VIFs created', progressbar(vif.length, 32)
                 ], [
-                'Memberships are currently held by the OS', progressbar(mships.value, igmp_max)
+                'ASM memberships (*,G) are currently held by the OS', progressbar(mships.value, asm_max)
+                ], [
+                'SSM memberships (S,G) are currently held by the OS', progressbar(filter.length, ssm_max)
                 ], [
                 'Active multicast routes', cache.length
                 ]); 

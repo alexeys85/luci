@@ -67,7 +67,8 @@
 				"/proc/sys/net/ipv4/igmp_max_memberships": [ "read" ],
 				"/proc/sys/net/ipv4/conf/all/mc_forwarding": [ "read" ],
 				"/proc/net/dev_mcast": [ "read" ],
-				"/proc/net/mcfilter": [ "read" ]
+				"/proc/net/mcfilter": [ "read" ],
+				"/proc/sys/net/ipv4/igmp_max_msf" : [ "read" ]
 			}
 		}
 	},
