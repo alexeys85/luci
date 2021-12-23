@@ -1,0 +1,10 @@
+{
+	"luci-mod-status-ethernet": {
+		"description": "Grant access to ethernet statistic",
+		"read": {
+			"file": {
+				"/usr/sbin/ethtool -S *": [ "exec" ]
+			}
+		}
+	}
+}
