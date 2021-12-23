@@ -23,12 +23,13 @@ function createValueCell(value, prettify) {
                     }, (prettify ? '%.2m' : '%d').format(value));
 };
 
-function progressbar(value, max) {
+function progressbar(value, max, show_max = true) {
     var pc = Math.floor((100 / max) * value);
 
     return E('div', {
         'class': 'cbi-progressbar',
-        'title': '%s / %s (%d%%)'.format(value, max, pc)
+        'title': show_max ? '%s / %s (%d%%)'.format(value, max, pc) :
+                            '%s (%d%%)'.format(value, pc)
     }, E('div', { 'style': 'width:%.2f%%'.format(pc) }));
 };
 
@@ -73,9 +74,47 @@ function getFrameDistrib(map1, map2) {
 
     for(var i = 0; i < params.length; ++i)
         res.push([
-            params[i].name, progressbar(map1.get(params[i].text), total1), 
-                            progressbar(map2.get(params[i].text), total2)
+            params[i].name, progressbar(map1.get(params[i].text), total1, false), 
+                            progressbar(map2.get(params[i].text), total2, false)
         ]);
+
+    res.push(["Total", total1, total2]);
+
+    return res;
+};
+
+function getFrameTypeDistrib(map1, map2) {
+    var eth0_rx_total = map1.get("Good Rx Frames"),
+        eth0_tx_total = map1.get("Good Tx Frames"),
+        eth1_rx_total = map2.get("Good Rx Frames"),
+        eth1_tx_total = map2.get("Good Tx Frames");
+
+    var eth0_bcast_rx = map1.get("Broadcast Rx Frames"),
+        eth0_mcast_rx = map1.get("Multicast Rx Frames"),
+        eth1_bcast_rx = map2.get("Broadcast Rx Frames"),
+        eth1_mcast_rx = map2.get("Multicast Rx Frames");
+
+    var eth0_bcast_tx = map1.get("Broadcast Tx Frames"),
+        eth0_mcast_tx = map1.get("Multicast Tx Frames"),
+        eth1_bcast_tx = map2.get("Broadcast Tx Frames"),
+        eth1_mcast_tx = map2.get("Multicast Tx Frames");
+
+    var res = [];
+
+    res.push(["Unicast",    progressbar(eth0_rx_total - eth0_mcast_rx - eth0_bcast_rx, eth0_rx_total, false), 
+                            progressbar(eth0_tx_total - eth0_mcast_tx - eth0_bcast_tx, eth0_tx_total, false),
+                            progressbar(eth1_rx_total - eth1_mcast_rx - eth1_bcast_rx, eth1_rx_total, false), 
+                            progressbar(eth1_tx_total - eth1_mcast_tx - eth1_bcast_tx, eth1_tx_total, false)]);
+
+    res.push(["Multicast",  progressbar(eth0_mcast_rx, eth0_rx_total, false), progressbar(eth0_mcast_tx, eth0_tx_total, false),
+                            progressbar(eth1_mcast_rx, eth1_rx_total, false), progressbar(eth1_mcast_tx, eth1_tx_total, false)]);
+    res.push(["Broadcast",  progressbar(eth0_bcast_rx, eth0_rx_total, false), progressbar(eth0_bcast_tx, eth0_tx_total, false),
+                            progressbar(eth1_bcast_rx, eth1_rx_total, false), progressbar(eth1_bcast_tx, eth1_tx_total, false)]);
+
+    res.push(["Total",  progressbar(eth0_rx_total, eth0_rx_total + eth0_tx_total),
+                        progressbar(eth0_tx_total, eth0_rx_total + eth0_tx_total),
+                        progressbar(eth1_rx_total, eth1_rx_total + eth1_tx_total),
+                        progressbar(eth1_tx_total, eth1_rx_total + eth1_tx_total)]);
 
     return res;
 };
@@ -143,6 +182,12 @@ function pollMr() {
 
             //pie('fr_dist_eth0_pie', formatPieDitrib(distr, 0));
             //pie('fr_dist_eth1_pie', formatPieDitrib(distr, 1));
+
+            var type_dist = getFrameTypeDistrib(eth0_stat, eth1_stat);
+
+            cbi_update_table('#fr_type_dist', type_dist,
+                E('em', _('No entries available'))
+            );
 
             var errors = getFrameErrors(eth0_stat, eth1_stat);
 
@@ -290,6 +335,10 @@ return view.extend({
             'Size RX+TX', 'Eth0', 'Eth1'
         ]);
 
+        var fr_type_dist = this.createTable('fr_type_dist', [
+            'Type', 'Eth0 RX', 'Eth0 TX', 'Eth1 RX', 'Eth1 TX'
+        ]);
+
         var fr_err = this.createTable('fr_err', [
             'Parameter', 'Eth0', 'Eth1'
         ]);
@@ -305,9 +354,9 @@ return view.extend({
             }),
 
             E('h2', [ _('Ethernet statistics') ]),
-            E('h5', [ _('In Dual Standalone EMAC mode hardware statistics is common for all the ports') ]),
+            E('h5', [ _('In Dual Standalone EMAC mode hardware statistics is common for all ports') ]),
             E('div', [
-                E('div', { 'class': 'cbi-section', 'data-tab': 'distribution', 'data-tab-title': _('Frames per frame size distribution') }, [
+                E('div', { 'class': 'cbi-section', 'data-tab': 'distribution', 'data-tab-title': _('Frames distribution') }, [
                     /*E('div', { 'class': 'head' }, [
                         E('div', { 'class': 'pie' }, [
                             E('label', [ _('Eth0') ]),
@@ -320,6 +369,7 @@ return view.extend({
                         ])
                     ]),*/
                     fr_dist,
+                    fr_type_dist
                 ]),
                 E('div', { 'class': 'cbi-section', 'data-tab': 'errors', 'data-tab-title': _('Errors') }, [
                     fr_err
