@@ -1,0 +1,10 @@
+{
+	"luci-mod-status-gpio": {
+		"description": "Grant access to the system GPIO state",
+		"read": {
+			"file": {
+				"/sys/kernel/debug/gpio": [ "read" ]
+			}
+		}
+	}
+}
