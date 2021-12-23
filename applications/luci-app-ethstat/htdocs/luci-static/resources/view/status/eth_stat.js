@@ -23,6 +23,15 @@ function createValueCell(value, prettify) {
                     }, (prettify ? '%.2m' : '%d').format(value));
 };
 
+function progressbar(value, max) {
+    var pc = Math.floor((100 / max) * value);
+
+    return E('div', {
+        'class': 'cbi-progressbar',
+        'title': '%s / %s (%d%%)'.format(value, max, pc)
+    }, E('div', { 'style': 'width:%.2f%%'.format(pc) }));
+};
+
 function parseEthtool(s) {
     var lines = s.trim().split(/\n/),
         res = new Map;
@@ -52,10 +61,21 @@ function getFrameDistrib(map1, map2) {
         {name : "1024-Up",  text : "Rx + Tx 1024-Up Octet Frames"},
     ];
 
+    var total1 = 0,
+        total2 = 0;
+
+    for(var i = 0; i < params.length; ++i) {
+        total1 += map1.get(params[i].text);
+        total2 += map2.get(params[i].text);
+    }
+
     var res = [];
 
     for(var i = 0; i < params.length; ++i)
-        res.push([params[i].name, map1.get(params[i].text), map2.get(params[i].text)]);
+        res.push([
+            params[i].name, progressbar(map1.get(params[i].text), total1), 
+                            progressbar(map2.get(params[i].text), total2)
+        ]);
 
     return res;
 };
@@ -121,8 +141,8 @@ function pollMr() {
                 E('em', _('No entries available'))
             );
 
-            pie('fr_dist_eth0_pie', formatPieDitrib(distr, 0));
-            pie('fr_dist_eth1_pie', formatPieDitrib(distr, 1));
+            //pie('fr_dist_eth0_pie', formatPieDitrib(distr, 0));
+            //pie('fr_dist_eth1_pie', formatPieDitrib(distr, 1));
 
             var errors = getFrameErrors(eth0_stat, eth1_stat);
 
@@ -221,7 +241,10 @@ return view.extend({
             tooltipEl.style.left = pos[0] + tooltip.x + 'px';
             tooltipEl.style.top = pos[1] + tooltip.y - tooltip.caretHeight - tooltip.caretPadding + 'px';
 
-            var row = findParent(tooltip.text[1], '.tr'),
+            //var row = findParent(tooltip.text[1], '.tr'),
+            var row = Array.from(document.querySelectorAll('tr'))
+                        .find(el => el.textContent.includes(tooltip.text[0]))
+                        .closest('tr'),
                 hue = tooltip.text[2];
 
             if (row && !isNaN(hue)) {
@@ -285,7 +308,7 @@ return view.extend({
             E('h5', [ _('In Dual Standalone EMAC mode hardware statistics is common for all the ports') ]),
             E('div', [
                 E('div', { 'class': 'cbi-section', 'data-tab': 'distribution', 'data-tab-title': _('Frames per frame size distribution') }, [
-                    E('div', { 'class': 'head' }, [
+                    /*E('div', { 'class': 'head' }, [
                         E('div', { 'class': 'pie' }, [
                             E('label', [ _('Eth0') ]),
                             E('canvas', { 'id': 'fr_dist_eth0_pie', 'width': 200, 'height': 200 })
@@ -295,7 +318,7 @@ return view.extend({
                             E('label', [ _('Eth1') ]),
                             E('canvas', { 'id': 'fr_dist_eth1_pie', 'width': 200, 'height': 200 })
                         ])
-                    ]),
+                    ]),*/
                     fr_dist,
                 ]),
                 E('div', { 'class': 'cbi-section', 'data-tab': 'errors', 'data-tab-title': _('Errors') }, [
