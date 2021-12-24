@@ -6,7 +6,12 @@
 				"/etc/board.json": [ "read" ],
 				"/proc/sys/net/netfilter/nf_conntrack_count": [ "read" ],
 				"/proc/sys/net/netfilter/nf_conntrack_max": [ "read" ],
-				"/www/luci-static/resources/view/status/include": [ "list" ]
+				"/www/luci-static/resources/view/status/include": [ "list" ],
+				"/sys/class/rtc/rtc1/runtime" : [ "read" ],
+				"/sys/class/watchdog/watchdog0/bootstatus" : [ "read" ],
+				"/sys/class/rtc/rtc0/scratch2" : [ "read" ],
+				"/sys/class/mmc_host/mmc1/mmc1:0001/life_time": [ "read" ],
+				"/sys/class/mmc_host/mmc1/mmc1:0001/pre_eol_info": [ "read" ]
 			},
 			"ubus": {
 				"luci": [ "getVersion" ],
