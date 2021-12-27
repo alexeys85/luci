@@ -7,7 +7,7 @@
 				"/proc/sys/net/netfilter/nf_conntrack_max": [ "read" ],
 				"/usr/lib/lua/luci/version.lua": [ "read" ],
 				"/www/luci-static/resources/view/status/include": [ "list" ],
-				"/usr/bin/hexdump -d /sys/bus/nvmem/devices/omap_rtc_scratch0/nvmem" : [ "exec" ]
+				"/tmp/sysinfo/am335x_info.json" : [ "read" ]
 			},
 			"ubus": {
 				"file": [ "list", "read" ],

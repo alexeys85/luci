@@ -7,22 +7,42 @@ return baseclass.extend({
 
 	load: function() {
 		return Promise.all([
-            L.resolveDefault(fs.exec('/usr/bin/hexdump', ['-d', '/sys/bus/nvmem/devices/omap_rtc_scratch0/nvmem']), {})
+			fs.read_direct('/tmp/sysinfo/am335x_info.json', 'json')
 		]);
 	},
 
-	render: function(data) {
-		var scratch_regs= data[0].stdout;
+	swap32: function(val) {
+		return ((val & 0xFF) << 24)
+		   | ((val & 0xFF00) << 8)
+		   | ((val >> 8) & 0xFF00)
+		   | ((val >> 24) & 0xFF);
+	},
 
-        //всего 3 регитра, состоящие из 2х-байтовых десятичных чисел,
-        //первое и последнне число - столбики смещения, нам же нужно последнее число
-        var regs = scratch_regs.trim().split(/\s+/);
-        var bootcount = parseInt(regs[6], 10);
-        //swap
-        bootcount = ((bootcount & 0xFF) << 8) | ((bootcount >> 8) & 0xFF);
+	reason_str: function(val) {
+		if(val & (1 << 0))
+			return "Power-on (cold) reset";
+		else if(val & (1 << 1))
+			return "Global warm software reset";
+		else if(val & (1 << 4))
+			return "Watchdog1 timer reset";
+		else if(val & (1 << 5))
+			return "External warm reset event";
+		else if(val & (1 << 9))
+			return "IcePick reset event";
+		else
+			return "Unknown reason: 0x%08X".format(val);
+	},
+
+	render: function(data) {
+		var bootcount = data[0].hasOwnProperty("boot_count_reg") ? 
+						this.swap32(+data[0].boot_count_reg) & 0xFFFF : "Unknown";
+
+		var reset_reg = data[0].hasOwnProperty("reset_reason_reg") ? 
+						this.reason_str(+data[0].reset_reason_reg) : "Unknown";
 
 		var fields = [
-            _('Boot count'),       bootcount
+			_('Boot count'),       bootcount,
+			_('Reset reason'),     reset_reg
 		];
 
 		var table = E('table', { 'class': 'table' });
