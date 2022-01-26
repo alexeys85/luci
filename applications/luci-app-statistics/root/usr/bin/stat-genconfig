@@ -162,6 +162,36 @@ function config_iptables( c )
 	return str
 end
 
+function config_nftables( c )
+	local str = ""
+
+	for id, s in pairs(sections) do
+		if s[".type"] == "collectd_nftables_match" then
+			local family = s.family and tostring(s.family)
+			local tname = s.table and tostring(s.table)
+			local chain = s.chain and tostring(s.chain)
+
+			if family and family:match("^%S+$") and tname and tname:match("^%S+$") and chain and chain:match("^%S+$") then
+				local line = { "\t", family, tname, chain }
+				local rule = s.rule and tostring(s.rule)
+
+				if rule and rule:match("^%S+$") then
+					line[#line+1] = rule
+
+					local name = s.name and tostring(s.name)
+					if name and name:match("^%S+$") then
+						line[#line+1] = name
+					end
+				end
+
+				str = str .. table.concat(line, " ") .. "\n"
+			end
+		end
+	end
+
+	return str
+end
+
 function config_network( c )
 	local str = ""
 
@@ -288,6 +318,8 @@ for filename in nixio.fs.dir(plugin_dir) do
 		plugins[name] = config_exec
 	elseif (name == "iptables") then
 		plugins[name] = config_iptables
+	elseif (name == "nftables") then
+		plugins[name] = config_nftables
 	elseif (name == "curl") then
 		plugins[name] = config_curl
 	elseif (name == "network") then
