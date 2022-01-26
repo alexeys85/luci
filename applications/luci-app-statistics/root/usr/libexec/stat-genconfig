@@ -219,6 +219,39 @@ function config_iptables(c) {
 	return str;
 }
 
+function config_nftables(c) {
+	let str = "";
+
+	for (let k, s in sections) {
+		for (let type, verb in { collectd_nftables_match: 'Chain' }) {
+			if (s['.type'] == type) {
+				let family = `${s.family}`;
+				let tname = `${s.table}`;
+				let chain = `${s.chain}`;
+
+				if (match(family, /^\S+$/) && match(tname, /^\S+$/) && match(chain, /^\S+$/)) {
+					str += `\t${family} ${tname} ${chain}`;
+
+					//let rule = `${s.rule}`;
+
+					//if (match(rule, /^\S+$/)) {
+					//	str += ` ${rule}`;
+
+					//	let name = `${s.name}`;
+
+					//	if (match(name, /^\S+$/))
+					//		str += ` ${name}`;
+					//}
+
+					str += '\n';
+				}
+			}
+		}
+	}
+
+	return str;
+}
+
 function config_network(c) {
 	let str = '';
 
@@ -268,6 +301,7 @@ for (let filename in lsdir(plugin_dir)) {
 	switch (name) {
 	case 'exec':     plugins[name] = config_exec;     break;
 	case 'iptables': plugins[name] = config_iptables; break;
+	case 'nftables': plugins[name] = config_nftables; break;
 	case 'curl':     plugins[name] = config_curl;     break;
 	case 'network':  plugins[name] = config_network;  break;
 	default:
