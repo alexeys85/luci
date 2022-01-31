@@ -1,0 +1,13 @@
+{
+	"luci-mod-status-sockstat": {
+		"description": "Grant access to the system socket statistics",
+		"read": {
+			"file": {
+				"/proc/net/udp": [ "read" ],
+				"/proc/net/raw": [ "read" ],
+				"/proc/net/unix": [ "read" ],
+				"/proc/net/tcp": [ "read" ]
+			}
+		}
+	}
+}
