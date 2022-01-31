@@ -1,0 +1,13 @@
+{
+	"admin/status/sockstat": {
+		"title": "System sockets statistics",
+		"order": 3,
+		"action": {
+			"type": "view",
+			"path": "status/sockstat"
+		},
+		"depends": {
+			"acl": [ "luci-mod-status-sockstat" ]
+		}
+	}
+}
