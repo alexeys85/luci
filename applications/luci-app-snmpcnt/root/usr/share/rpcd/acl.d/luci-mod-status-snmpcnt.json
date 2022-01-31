@@ -1,0 +1,12 @@
+{
+	"luci-mod-status-snmpcnt": {
+		"description": "Grant access to the system SNMP counters",
+		"read": {
+			"file": {
+				"/proc/net/snmp": [ "read" ],
+				"/proc/net/netstat": [ "read" ],
+				"/proc/net/softnet_stat": [ "read" ]
+			}
+		}
+	}
+}
