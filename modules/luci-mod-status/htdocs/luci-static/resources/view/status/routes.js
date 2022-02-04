@@ -31,7 +31,7 @@ return view.extend({
 	load: function() {
 		return Promise.all([
 			callNetworkInterfaceDump(),
-			L.resolveDefault(fs.exec('/sbin/ip', [ '-4', 'neigh', 'show' ]), {}),
+			L.resolveDefault(fs.exec('/sbin/ip', [ '-4', '-s', 'neigh', 'show' ]), {}),
 			L.resolveDefault(fs.exec('/sbin/ip', [ '-4', 'route', 'show', 'table', 'all' ]), {}),
 			L.resolveDefault(fs.exec('/sbin/ip', [ '-4', 'rule', 'show' ]), {}),
 			L.resolveDefault(fs.exec('/sbin/ip', [ '-6', 'neigh', 'show' ]), {}),
@@ -101,12 +101,20 @@ return view.extend({
 			if (!flags.lladdr)
 				continue;
 
+			var timers = '';
+			for (var j = 0; j < flags.length; j++)
+				if(flags[j].includes('/')) {
+					timers = flags[j];
+					break;
+				}
+
+
 			var net = this.getNetworkByDevice(networks, flags.dev, addr, v6 ? 128 : 32, v6);
 
 			res.push([
 				addr,
 				flags.lladdr.toUpperCase(),
-				E('span', { 'class': 'ifacebadge' }, [ net ? net : '(%s)'.format(flags.dev) ])
+				E('span', { 'class': 'ifacebadge' }, [ net ? net : '(%s)'.format(flags.dev) ]), state, timers
 			]);
 		}
 
@@ -173,11 +181,15 @@ return view.extend({
 		    ip6route = data[5].stdout || '',
 		    ip6rule = data[6].stdout || '';
 
+		const timers_tooltip = 'Number of seconds since the ARP entry was last used/confirmed/updated';
+
 		var neigh4tbl = E('table', { 'class': 'table' }, [
 			E('tr', { 'class': 'tr table-titles' }, [
 				E('th', { 'class': 'th' }, [ _('IP address') ]),
 				E('th', { 'class': 'th' }, [ _('MAC address') ]),
-				E('th', { 'class': 'th' }, [ _('Interface') ])
+				E('th', { 'class': 'th' }, [ _('Interface') ]),
+				E('th', { 'class': 'th' }, [ _('State') ]),
+				E('th', { 'class': 'th', 'data-tooltip': timers_tooltip }, [ _('Timers') ])
 			])
 		]);
 
