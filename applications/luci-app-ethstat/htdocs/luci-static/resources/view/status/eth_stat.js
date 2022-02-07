@@ -121,32 +121,34 @@ function getFrameTypeDistrib(map1, map2) {
 
 function getFrameErrors(map1, map2) {
     const params = [
-        "Pause Rx Frames", 
-        "Rx CRC Errors", 
-        "Rx Align/Code Errors",
-        "Oversize Rx Frames",
-        "Rx Jabbers",
-        "Undersize (Short) Rx Frames", 
-        "Rx Fragments", 
-        "Rx Start of Frame Overruns", 
-        "Rx Middle of Frame Overruns", 
-        "Rx DMA Overruns",
+        {text : "Pause Rx Frames", tooltip : "The total number of IEEE 802.3X pause frames received\nby the port (whether acted upon or not)"}, 
+        {text : "Rx CRC Errors", tooltip : "The total number of frames received on\nthe port that experienced a CRC error"},
+        {text : "Rx Align/Code Errors", tooltip : "The total number of frames received on the\nport that experienced an alignment error or code error"},
+        {text : "Oversize Rx Frames", tooltip : "The total number of oversized frames received on the port"},
+        {text : "Rx Jabbers", tooltip : "he total number of jabber frames received on the port"},
+        {text : "Undersize (Short) Rx Frames", tooltip : "The total number of undersized frames received on the port"},
+        {text : "Rx Fragments", tooltip : "The total number of frame fragments received on the port"},
+        {text : "Rx Start of Frame Overruns", tooltip : "The total number of frames received on the port that\nhad a CPDMA start of frame (SOF) overrun or were\ndropped by due to FIFO resource limitations"}, 
+        {text : "Rx Middle of Frame Overruns", tooltip : "The total number of frames received on the\nport that had a CPDMA middle of frame (MOF) overrun"}, 
+        {text : "Rx DMA Overruns", tooltip : "The total number of frames received on the\nport that had either a DMA start of\nframe (SOF) overrun or a DMA MOF overrun"},
 
-        "Pause Tx Frames", 
-        "Deferred Tx Frames", 
-        "Collisions", 
-        "Single Collision Tx Frames", 
-        "Multiple Collision Tx Frames", 
-        "Excessive Collisions", 
-        "Late Collisions",
-        "Tx Underrun", 
-        "Carrier Sense Errors"
+        {text : "Pause Tx Frames", tooltip : "The number of IEEE 802.3X pause frames transmitted by the port"}, 
+        {text : "Deferred Tx Frames", tooltip : "The total number of frames transmitted on the port\nthat first experienced deferment"}, 
+        {text : "Collisions", tooltip : "The total number of times that the port experienced a collision"},
+        {text : "Single Collision Tx Frames", tooltip : "The total number of frames transmitted on the port\nthat experienced exactly one collision"},
+        {text : "Multiple Collision Tx Frames", tooltip : "The total number of frames transmitted on the port\nthat experienced multiple collisions"},
+        {text : "Excessive Collisions", tooltip : "The total number of frames for which transmission\nwas abandoned due to excessive collisions"}, 
+        {text : "Late Collisions", tooltip : "The total number of frames on the port for which transmission\nwas abandoned because they experienced a late collision"},
+        {text : "Tx Underrun", tooltip : "There should be no transmitted frames that experience underrun"}, 
+        {text : "Carrier Sense Errors", tooltip : "The total number of frames received on the port\nthat had a CPDMA middle of frame (MOF) overrun"}
     ];
 
     var res = [];
 
-    for(var i = 0; i < params.length; ++i)
-        res.push([params[i], map1.get(params[i]), map2.get(params[i])]);
+    for(var i = 0; i < params.length; ++i) {
+        var val = E('td', { 'data-tooltip' : params[i].tooltip }, _(params[i].text) );
+        res.push([val, map1.get(params[i].text), map2.get(params[i].text)]);
+    }
 
     return res;
 };
