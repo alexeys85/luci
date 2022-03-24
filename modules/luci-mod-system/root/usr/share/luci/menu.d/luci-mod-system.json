@@ -11,6 +11,18 @@
 		}
 	},
 
+	"admin/system/bupd": {
+		"title": "BUPD",
+		"order": 2,
+		"action": {
+			"type": "view",
+			"path": "system/bupd"
+		},
+		"depends": {
+			"acl": [ "luci-mod-system-bupd" ]
+		}
+	},
+
 	"admin/system/admin": {
 		"title": "Administration",
 		"order": 2,
