@@ -207,6 +207,7 @@ return view.extend({
 				/* sysupgrade opts table  [0]:checkbox element [1]:check condition [2]:args to pass */
 				var opts = {
 				    keep : [ E('input', { type: 'checkbox' }), false, '-n' ],
+				    bupd : [ E('input', { type: 'checkbox' }), true, '--bupd-only' ],
 				    force : [ E('input', { type: 'checkbox' }), true, '--force' ],
 				    skip_orig : [ E('input', { type: 'checkbox' }), true, '-u' ],
 				    backup_pkgs : [ E('input', { type: 'checkbox' }), true, '-k' ],
@@ -226,6 +227,10 @@ return view.extend({
 
 				body.push(E('p', {}, E('label', { 'class': 'btn' }, [
 					opts.keep[0], ' ', _('Keep settings and retain the current configuration')
+				])));
+
+				body.push(E('p', {}, E('label', { 'class': 'btn' }, [
+					opts.bupd[0], ' ', _('Keep BUPD main config file only')
 				])));
 
 				if (!is_valid || is_too_big)
@@ -251,6 +256,7 @@ return view.extend({
 					opts.keep[0].disabled = true;
 				} else {
 					opts.keep[0].checked = true;
+					opts.bupd[0].checked = true;
 
 					if (has_rootfs_data) {
 						body.push(E('p', {}, E('label', { 'class': 'btn' }, [
@@ -302,7 +308,9 @@ return view.extend({
 				opts.keep[0].addEventListener('change', function(ev) {
 					opts.skip_orig[0].disabled = !ev.target.checked;
 					opts.backup_pkgs[0].disabled = !ev.target.checked;
-
+					opts.bupd[0].disabled = !ev.target.checked;
+					if(opts.bupd[0].disabled)
+						opts.bupd[0].checked = false;
 				});
 
 				ui.showModal(_('Flash image?'), body);
