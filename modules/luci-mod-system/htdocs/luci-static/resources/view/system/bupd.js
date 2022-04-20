@@ -66,6 +66,9 @@ return view.extend({
 		o = s.option(form.Flag, 'run_ptp', _('Run PTP'));
 		o.default  = o.disabled;
 
+		o = s.option(form.Flag, 'ge100only', _('Force 100M'));
+		o.default  = o.disabled;
+
 		o = s.option(form.Value, 'gpio_code', _('GPIO code'));
 		o.readonly    = false;
 
