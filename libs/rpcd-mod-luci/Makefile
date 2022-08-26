@@ -15,6 +15,7 @@ PKG_LICENSE:=Apache-2.0
 
 PKG_BUILD_PARALLEL:=1
 PKG_BUILD_DEPENDS:=iwinfo
+PKG_BUILD_FLAGS:=lto
 
 include $(INCLUDE_DIR)/package.mk
 include $(INCLUDE_DIR)/cmake.mk
@@ -40,6 +41,11 @@ endef
 
 define Package/rpcd-mod-luci/description
  Provides LuCI backend ubus RPC operations.
+endef
+
+define Build/Configure
+	find $(PKG_BUILD_DIR)/ -type f -name "CMakeLists.txt" -exec sed -i 's/-Os/-O2/g' {} +
+	$(call Build/Configure/Default)
 endef
 
 define Package/rpcd-mod-luci/install
