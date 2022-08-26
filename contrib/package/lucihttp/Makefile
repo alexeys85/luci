@@ -12,6 +12,7 @@ CMAKE_INSTALL:=1
 
 PKG_LICENSE:=ISC
 PKG_LICENSE_FILES:=LICENSE
+PKG_BUILD_FLAGS:=lto
 
 PKG_MAINTAINER:=Jo-Philipp Wich <jo@mein.io>
 PKG_CONFIG_DEPENDS:=CONFIG_PACKAGE_liblucihttp-lua CONFIG_PACKAGE_liblucihttp-ucode
@@ -47,6 +48,11 @@ CMAKE_OPTIONS += \
 	-DBUILD_LUA=$(if $(CONFIG_PACKAGE_liblucihttp-lua),ON,OFF) \
 	-DBUILD_UCODE=$(if $(CONFIG_PACKAGE_liblucihttp-ucode),ON,OFF) \
 	-DBUILD_TESTS=OFF
+
+define Build/Configure
+	find $(PKG_BUILD_DIR)/ -type f -name "CMakeLists.txt" -exec sed -i 's/-Os/-O2/g' {} +
+	$(call Build/Configure/Default)
+endef
 
 define Build/InstallDev
 	$(INSTALL_DIR) $(1)/usr/lib
