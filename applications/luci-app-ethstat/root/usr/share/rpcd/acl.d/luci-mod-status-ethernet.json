@@ -4,6 +4,9 @@
 		"read": {
 			"file": {
 				"/usr/sbin/ethtool -S *": [ "exec" ]
+			},
+			"ubus": {
+				"network.device": [ "status" ]
 			}
 		}
 	}

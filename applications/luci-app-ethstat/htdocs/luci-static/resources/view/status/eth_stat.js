@@ -4,6 +4,13 @@
 'require poll';
 'require ui';
 'require dom';
+'require rpc';
+
+var callNetDevStatus = rpc.declare({
+	object: 'network.device',
+	method: 'status',
+	params: [ 'name' ]
+});
 
 var pollIval = 2;
 
@@ -32,6 +39,62 @@ function progressbar(value, max, show_max = true) {
                             '%s (%d%%)'.format(value, pc)
     }, E('div', { 'style': 'width:%.2f%%'.format(pc) }));
 };
+
+function parseSatistics(eth0_stat, eth1_stat) {
+	const params = [
+		{name : "collisions",       	err : true, tooltip : "Number of collisions during packet transmissions"},
+		{name : "rx_frame_errors",   	err : true, tooltip : "Receiver frame alignment errors"},
+		{name : "tx_compressed",  		err : false, tooltip : "Number of transmitted compressed packets"},
+		{name : "multicast",  			err : false, tooltip : "Multicast packets received"},
+		{name : "rx_length_errors", 	err : true, tooltip : "Number of packets dropped due to invalid length"},
+		{name : "tx_dropped",  			err : true, tooltip : "Number of packets dropped on their way to transmission, e.g. due to lack of resources."},
+		{name : "rx_bytes",       		err : false, tooltip : "Number of good received bytes, corresponding to rx_packets."},
+		{name : "rx_missed_errors", 	err : true, tooltip : "Counts number of packets dropped by the device due to lack of buffer space"},
+		{name : "tx_errors",  			err : true, tooltip : "Total number of transmit problems"},
+		{name : "rx_compressed",  		err : false, tooltip : "Number of correctly received compressed packets"},
+		{name : "rx_over_errors", 		err : true, tooltip : "Receiver FIFO overflow event counter"},
+		{name : "tx_fifo_errors", 		err : true, tooltip : "Number of frame transmission errors due to device FIFO underrun / underflow"},
+		{name : "rx_crc_errors", 		err : true, tooltip : "Number of packets received with a CRC error"},
+		{name : "rx_packets", 			err : false, tooltip : "Number of good packets received by the interface"},
+		{name : "tx_heartbeat_errors", 	err : true, tooltip : "Number of Heartbeat / SQE Test errors for old half-duplex Ethernet"},
+		{name : "rx_dropped", 			err : true, tooltip : "Number of packets received but not processed, e.g. due to lack of resources or unsupported protocol"},
+		{name : "tx_aborted_errors", 	err : true, tooltip : "Part of aggregate “carrier” errors in /proc/net/dev"},
+		{name : "tx_packets", 			err : false, tooltip : "Number of packets successfully transmitted"},
+		{name : "rx_errors", 			err : true, tooltip : "Total number of bad packets received on this network device"},
+		{name : "tx_bytes", 			err : false, tooltip : "Number of good transmitted bytes, corresponding to tx_packets"},
+		{name : "tx_window_errors", 	err : true, tooltip : "Number of frame transmission errors due to late collisions"},
+		{name : "rx_fifo_errors", 		err : true, tooltip : "Receiver FIFO error counter"},
+		{name : "tx_carrier_errors", 	err : true, tooltip : "Number of frame transmission errors due to loss of carrier during transmission"}
+	];
+
+	var res = [];
+
+	if(!eth0_stat.hasOwnProperty("statistics") || !eth1_stat.hasOwnProperty("statistics"))
+		return res;
+
+	for(var i = 0; i < params.length; ++i) {
+		var val_eth0, val_eth1;
+		var color = params[i].err ? 'color:red' : null;
+
+		if(eth0_stat.statistics.hasOwnProperty(params[i].name)) {
+			val_eth0 = eth0_stat.statistics[params[i].name];
+			val_eth0 = E('td', { 'style' : color }, _(val_eth0) );
+		}
+		if(eth1_stat.statistics.hasOwnProperty(params[i].name)) {
+			val_eth1 = eth1_stat.statistics[params[i].name];
+			val_eth1 = E('td', { 'style' : color }, _(val_eth1) );
+		}
+
+		var name = E('td', { 'data-tooltip' : params[i].tooltip, 'style' : color }, 
+							 _(params[i].name) );
+
+		res.push([ name, val_eth0, val_eth1 ]);
+	}
+	res.sort((a, b) => {
+		return a[0].innerText.localeCompare(b[0].innerText);
+	});
+	return res;
+}
 
 function parseEthtool(s) {
     var lines = s.trim().split(/\n/),
@@ -171,7 +234,9 @@ function formatPieDitrib(distr, num) {
 function pollMr() {
     return Promise.all([
             L.resolveDefault(fs.exec('/usr/sbin/ethtool', ['-S', 'eth0']), {}),
-            L.resolveDefault(fs.exec('/usr/sbin/ethtool', ['-S', 'eth1']), {})
+            L.resolveDefault(fs.exec('/usr/sbin/ethtool', ['-S', 'eth1']), {}),
+            L.resolveDefault(callNetDevStatus("eth0"), {}),
+            L.resolveDefault(callNetDevStatus("eth1"), {})
         ]).then(function(data) {
             var eth0_stat = parseEthtool(data[0].stdout),
                 eth1_stat = parseEthtool(data[1].stdout);
@@ -194,6 +259,12 @@ function pollMr() {
             var errors = getFrameErrors(eth0_stat, eth1_stat);
 
             cbi_update_table('#fr_err', errors,
+                E('em', _('No entries available'))
+            );
+
+            var eth_kern_stat = parseSatistics(data[2], data[3]);
+
+            cbi_update_table('#fr_stat', eth_kern_stat,
                 E('em', _('No entries available'))
             );
         });
@@ -319,9 +390,9 @@ return view.extend({
     },
 
     render: function() {
-        document.addEventListener('tooltip-open', L.bind(function(ev) {
+        /*document.addEventListener('tooltip-open', L.bind(function(ev) {
             this.renderHostDetail(ev.detail.target, ev.target);
-        }, this));
+        }, this));*/
 
         if ('ontouchstart' in window) {
             document.addEventListener('touchstart', function(ev) {
@@ -332,6 +403,10 @@ return view.extend({
                 ui.hideTooltip(ev);
             });
         }
+
+        var fr_stat = this.createTable('fr_stat', [
+            'Parameter', 'Eth0', 'Eth1'
+        ]);
 
         var fr_dist = this.createTable('fr_dist', [
             'Size RX+TX', 'Eth0', 'Eth1'
@@ -358,6 +433,9 @@ return view.extend({
             E('h2', [ _('Ethernet statistics') ]),
             E('h5', [ _('In Dual Standalone EMAC mode hardware statistics is common for all ports') ]),
             E('div', [
+            	E('div', { 'class': 'cbi-section', 'data-tab': 'statistics', 'data-tab-title': _('Statistics') }, [
+                    fr_stat
+                ]),
                 E('div', { 'class': 'cbi-section', 'data-tab': 'distribution', 'data-tab-title': _('Frames distribution') }, [
                     /*E('div', { 'class': 'head' }, [
                         E('div', { 'class': 'pie' }, [
